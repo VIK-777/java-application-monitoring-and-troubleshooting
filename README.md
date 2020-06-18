@@ -8,6 +8,7 @@ _4. Java Application as a Runtime White Box: App running, JVM and application mo
 # Webinar recordings
 - [09.06.2020](https://us02web.zoom.us/rec/share/wuByc-7r-ntOTJXmtXrufJ4HO9rIeaa82yNMrPcJy0iNB8XirR1aXECwTcmAhGcZ)
 - [11.06.2020](https://us02web.zoom.us/rec/share/7uZJFbXS9UVIeqvw1UHHQO17GLa0T6a8gSkbq_VfnxwTgmdUrWhXBOGNNv3yKVs3)
+- [16.06.2020](https://us02web.zoom.us/rec/share/xcx-MbfQtWpORbPSyBHySvcsDLv-aaa81CAdr_sOxU4FHrUN_tXJFIRzvtorlRM5)
 
 # Training Objectives
 - [ ] Understanding modern application architecture and defect hotspots
@@ -135,11 +136,9 @@ git clone https://github.com/{{ STUDENT_ACCOUNT }}/java-application-monitoring-a
 cd java-application-monitoring-and-troubleshooting
 git checkout {{ group_custom_branch }}
 ```
+
 ### When
-- [ ] Project application built locally with maven
-```shell script
-mvn clean verify [-DskipTests]
-```
+- [ ] Project application built locally with maven `mvn clean verify [-DskipTests]`
 - [ ] Project application ran locally with CLI
 ```shell script
 java \
@@ -149,15 +148,14 @@ java \
   com.acme.dbo.Presentation \
   program arguments
 ```
-- [ ] JVisualVM profiler connected to running app
-```shell script
-$JAVA_HOME/bin/jvisualvm
-```
+
+- [ ] JVisualVM profiler connected to running app `$JAVA_HOME/bin/jvisualvm`
 - [ ] OS-specific monitoring tool shows application process details
 ```shell script
 linux$ top [-pid jvmpid]
 windows> taskmgr
 ```
+
 ### Then answered and reviewed at debrief
 - [ ] What is the default encoding for I/O?
 - [ ] What is the default heap size for app running?
@@ -377,10 +375,7 @@ jmeter --> jmeter_agent
 
 ## Hands-on: Prod host and monitoring provisioning (15m)
 ### Given
-- [ ] Ansible provisioning [scripts and assets](/iaac) 
-```shell script
-cd iaac
-``` 
+- [ ] Ansible provisioning [scripts and assets](/iaac) `cd iaac`
 - [ ] Provisioning [documentation](/iaac/README.md)
 
 ### When
@@ -388,10 +383,8 @@ cd iaac
 
 ### Then
 - [ ] Prometheus UI up and running at `http://{{ prod }}:9090/alerts`
-- [x] JMeter can connect agent deployed at {{ prod }}:
+- [x] JMeter can connect agent deployed at {{ prod }}: `jmeter -Jremote_hosts=127.0.0.1 -Dserver.rmi.ssl.disable=true`
 ```shell script
-jmeter -Jremote_hosts=127.0.0.1 -Dserver.rmi.ssl.disable=true
-
 JMeter → Options → Log Viewer
 JMeter → Run → Remote Start → 127.0.0.1
 ```
@@ -423,10 +416,7 @@ JMeter → Run → Remote Start → 127.0.0.1
 ## Hands-on: Modern application _remote_ building, running and monitoring (30m)
 ### Given
 - [x] Given rights for application folder to developer user
-- [ ] `ssh` session to {{ prod }}:[ansible_port](/iaac/inventories/production/hosts.yml)
-```shell script
-ssh -p 2222 root@localhost
-```
+- [ ] SSH session to {{ prod }}:[ansible_port](/iaac/inventories/production/hosts.yml) `ssh -p 2222 root@localhost`
 - [ ] **Forked** [application codebase](https://github.com/eugene-krivosheyev/agile-practices-application) to student's account
 - [ ] Application built at {{ prod }}
 ```shell script
@@ -452,10 +442,13 @@ nohup \
       --server.port=8080 \
 > /dev/null 2>&1 &
 ```
-- [ ] Load emulation ran at dev station
+
+- [ ] External Legacy System REST stub started
 ```shell script
-jmeter -n -t load.jmx -Jremote_hosts=127.0.0.1 -Dserver.rmi.ssl.disable=true
-```
+cd target/test-classes # cat mappings/legacyAccountingSystemResponse.json
+java -jar wiremock-jre8-standalone-2.26.3.jar --verbose --port 8888 & # curl localhost:8888/api/account
+``` 
+
 - [ ] CLI tools used at {{ prod }}
 ```shell script
 df -ah
@@ -468,7 +461,7 @@ ps -ef
 ps -eaux --forest
 ps -eT | grep <pid>
 
-top
+top + 'q'
 top + 'f'
 top -p <pid>
 top -H -p <pid>
@@ -479,12 +472,22 @@ jcmd <pid> VM.uptime
 jcmd <pid> VM.system_properties
 jcmd <pid> VM.flags
 ```
+
+- [ ] Load emulation ran at dev station
+```shell script
+jmeter -Jremote_hosts=127.0.0.1 -Dserver.rmi.ssl.disable=true # GUI mode
+jmeter -n -t load.jmx -Jremote_hosts=127.0.0.1 -Dserver.rmi.ssl.disable=true # CLI mode
+```
+
 - [ ] Web applications used from dev station
 ```
 http://{{ prod }}:8080/dbo/swagger-ui.html
 
 http://{{ prod }}:8080/dbo/actuator/health
 http://{{ prod }}:8080/dbo/actuator
+http://{{ prod }}:8080/dbo/actuator/metrics
+http://{{ prod }}:8080/dbo/actuator/metrics/jvm.memory.max?tag=area:nonheap&tag=id:Metaspace
+
 http://{{ prod }}:8080/dbo/actuator/prometheus
 
 http://{{ prod }}:9090/alerts
@@ -494,11 +497,8 @@ http://{{ prod }}:9090/graph?g0.range_input=15m&g0.tab=0&g0.expr=http_server_req
 
 ### Finally
 - [ ] JMeter load emulation stopped at dev station
-- [ ] Application gracefully stopped at {{ prod }}
-```shell script
-curl --request POST http://{{ prod }}:8080/dbo/actuator/shutdown
-rm -rf dbo-db
-```
+- [ ] Application gracefully stopped at {{ prod }} `curl --request POST http://{{ prod }}:8080/dbo/actuator/shutdown`
+- [ ] Database filled up with tests data removed `rm -rf dbo-db`
 
 ### Then answered and reviewed at debrief
 - [ ] Free HDD space? Free RAM?
